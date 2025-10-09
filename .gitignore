@@ -44,4 +44,5 @@ apikey.txt
 !/data/.keep
 cloud-vision-srv-scc.json
 /upload/*
+!/upload/.keep
 test.json
