@@ -8,6 +8,7 @@ import (
 	"os"
 
 	vision "cloud.google.com/go/vision/apiv1"
+	"github.com/joho/godotenv"
 	"google.golang.org/api/option"
 )
 
@@ -25,6 +26,12 @@ type TextBlock struct {
 type Point struct {
 	X int32 `json:"x"`
 	Y int32 `json:"y"`
+}
+
+func init() {
+	if err := godotenv.Load("./env/.env"); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {
@@ -92,5 +99,5 @@ func main() {
 		log.Fatalf("Failed to marshal JSON: %v", err)
 	}
 
-	fmt.Println(string(jsonData))
+	ToJson(ctx, jsonData)
 }
