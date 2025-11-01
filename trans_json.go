@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 
@@ -19,7 +18,7 @@ type Receipt struct {
 	Remark           string  `json:"remark"`
 }
 
-func ToJson(ctx context.Context, jtxt []byte) {
+func ToJson(ctx context.Context, jtxt []byte) ([]Receipt, error) {
 	apiKey := os.Getenv("GEMINI_API_KEY")
 
 	g := genkit.Init(ctx, genkit.WithPlugins(&googlegenai.GoogleAI{
@@ -54,13 +53,14 @@ Receipt Data: %s
 	)
 	if err != nil {
 		log.Fatal(err)
+		return nil, err
 	}
 
-	fmt.Println("========== OUTPUT ==========")
 	items := []Receipt{}
 	if err := resp.Output(&items); err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to unmarshals items: %v", err)
+		return nil, err
 	}
 
-	fmt.Printf("\n%+v\n", items)
+	return items, nil
 }

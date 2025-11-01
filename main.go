@@ -1,15 +1,14 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"os"
 
-	vision "cloud.google.com/go/vision/apiv1"
+	"github.com/hifat/billing-reader/pb"
 	"github.com/joho/godotenv"
-	"google.golang.org/api/option"
+	"google.golang.org/grpc"
 )
 
 type OCRResult struct {
@@ -34,70 +33,39 @@ func init() {
 	}
 }
 
-func main() {
-	ctx := context.Background()
-
-	client, err := vision.NewImageAnnotatorClient(ctx, option.WithCredentialsFile("./env/cloud-vision-srv-scc.json"))
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
-	defer client.Close()
-
-	fileName := "./upload/receipt.jpg"
-	file, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("Failed to open image: %v", err)
-	}
-	defer file.Close()
-
-	image, err := vision.NewImageFromReader(file)
-	if err != nil {
-		log.Fatalf("Failed to read image: %v", err)
+func validateEnv() {
+	keys := map[string]string{
+		"PORT":           os.Getenv("PORT"),
+		"API_KEY":        os.Getenv("API_KEY"),
+		"GEMINI_API_KEY": os.Getenv("GEMINI_API_KEY"),
 	}
 
-	annotation, err := client.DetectDocumentText(ctx, image, nil)
-	if err != nil {
-		log.Fatalf("Failed to detect text: %v", err)
-	}
-
-	if annotation == nil {
-		fmt.Println(`{"text": "", "blocks": []}`)
-		return
-	}
-
-	result := OCRResult{
-		FullText: annotation.Text,
-	}
-
-	for _, page := range annotation.Pages {
-		for _, block := range page.Blocks {
-			var blockText string
-			for _, paragraph := range block.Paragraphs {
-				for _, word := range paragraph.Words {
-					for _, symbol := range word.Symbols {
-						blockText += symbol.Text
-					}
-					blockText += " "
-				}
-			}
-
-			bbox := make([]Point, 0, len(block.BoundingBox.Vertices))
-			for _, v := range block.BoundingBox.Vertices {
-				bbox = append(bbox, Point{X: v.X, Y: v.Y})
-			}
-
-			result.Blocks = append(result.Blocks, TextBlock{
-				Text:        blockText,
-				Confidence:  block.Confidence,
-				BoundingBox: bbox,
-			})
+	for k, v := range keys {
+		if v == "" {
+			log.Fatalf("%s is required", k)
 		}
 	}
+}
 
-	jsonData, err := json.MarshalIndent(result, "", "  ")
-	if err != nil {
-		log.Fatalf("Failed to marshal JSON: %v", err)
+func main() {
+	s := &server{
+		apiKey: os.Getenv("API_KEY"),
 	}
 
-	ToJson(ctx, jsonData)
+	port := os.Getenv("PORT")
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
+
+	grpcSrv := grpc.NewServer(
+		grpc.UnaryInterceptor(s.authInterceptor),
+	)
+
+	pb.RegisterBillingReaderServer(grpcSrv, s)
+
+	log.Printf("listening on port :%s", port)
+	if err := grpcSrv.Serve(lis); err != nil {
+		log.Fatalf("Failed to serve: %v", err)
+	}
 }

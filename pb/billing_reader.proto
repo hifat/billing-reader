@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package billingReaderPb;
+
+option go_package = "github.com/hifat/billing-reader/pb";
+
+message ReadReceiptRequest {
+    bytes image_data = 1;
+}
+
+message Receipt {
+    string name = 1;
+    string name_edited = 2;
+    double purchase_price = 3;
+    double purchase_quantity = 4;
+    string remark = 5;
+}
+
+message ReadReceiptResponse {
+    bool success = 1;
+    string error = 2;
+    repeated Receipt receipt = 3;
+}
+
+service BillingReader {
+    rpc ReadReceipt(ReadReceiptRequest) returns (ReadReceiptResponse);
+}
