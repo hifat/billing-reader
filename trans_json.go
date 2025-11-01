@@ -49,7 +49,7 @@ Receipt Data: %s
 
 	resp, err := genkit.Generate(ctx, g,
 		ai.WithPrompt(prompt, jtxt),
-		ai.WithModelName("googleai/gemini-2.5-flash"),
+		ai.WithModelName("googleai/gemini-2.5-flash-lite"),
 		ai.WithOutputType([]Receipt{}),
 	)
 	if err != nil {
