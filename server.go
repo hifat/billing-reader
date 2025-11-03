@@ -41,13 +41,8 @@ func (s *server) authInterceptor(ctx context.Context, req any, info *grpc.UnaryS
 	return handler(ctx, req)
 }
 
-func (s *server) ReadReceipt(ctx context.Context, stream pb.BillingReader_ReadReceiptServer) (*pb.ReadReceiptResponse, error) {
-	// if len(req.Chunk) > MaxFileSize {
-	// 	return &pb.ReadReceiptResponse{
-	// 		Success: false,
-	// 		Error:   fmt.Sprintf("file size exceeds maximum of %d bytes", MaxFileSize),
-	// 	}, nil
-	// }
+func (s *server) ReadReceipt(stream pb.BillingReader_ReadReceiptServer) error {
+	// TODO: Validate file size
 
 	file := utils.File{
 		FilePath:   "",
@@ -70,57 +65,48 @@ func (s *server) ReadReceipt(ctx context.Context, stream pb.BillingReader_ReadRe
 			break
 		}
 		if err != nil {
-			return &pb.ReadReceiptResponse{
-				Success: false,
-				Error:   fmt.Sprintf("failed to receive file: %v", err),
-			}, nil
+			log.Printf("Failed to stream receive: %v", err)
+			status.Error(codes.Internal, fmt.Sprintf("failed to receive file: %v", err))
 		}
 
 		chunk := req.GetChunk()
 		fileSize += uint32(len(chunk))
 		slog.Debug("received a chunk with size: ", "bytes", fileSize)
 		if err := file.Write(chunk); err != nil {
-			return &pb.ReadReceiptResponse{
-				Success: false,
-				Error:   fmt.Sprintf("failed to write file: %v", err),
-			}, nil
+			log.Printf("Failed to write chunk: %v", err)
+			status.Error(codes.Internal, fmt.Sprintf("Failed to write chunk: %v", err))
 		}
 	}
-
 	fileName := filepath.Base(file.FilePath)
 	slog.Debug("saved file: %s, size: %d", fileName, fileSize)
 
-	err := stream.SendAndClose(&pb.ReadReceiptResponse{
-		Success: true,
-		Error:   "",
-	})
-
-	_ = err
-
 	/* ----------------------------- End Upload Part ---------------------------- */
 
-	// receipts, err := ExtractFromImage(ctx, "./env/cloud-vision-srv-scc.json", "./upload/receipt.jpg")
-	// if err != nil {
-	// 	log.Printf("Failed to extract from image: %v", err)
-	// 	return &pb.ReadReceiptResponse{
-	// 		Success: false,
-	// 		Error:   fmt.Sprintf("failed to extract from image: %v", err),
-	// 	}, nil
-	// }
+	receipts, err := ExtractFromImage(stream.Context(), "./env/cloud-vision-srv-scc.json", "./"+file.FilePath)
+	if err != nil {
+		log.Printf("Failed to extract from image: %v", err)
+		status.Error(codes.Internal, fmt.Sprintf("failed to extract from image: %v", err))
+	}
 
-	// resReceipts := make([]*pb.Receipt, 0, len(receipts))
-	// for _, v := range receipts {
-	// 	resReceipts = append(resReceipts, &pb.Receipt{
-	// 		Name:             v.Name,
-	// 		NameEdited:       v.NameEdited,
-	// 		PurchasePrice:    v.PurchasePrice,
-	// 		PurchaseQuantity: v.PurchaseQuantity,
-	// 		Remark:           v.Remark,
-	// 	})
-	// }
+	resReceipts := make([]*pb.Receipt, 0, len(receipts))
+	for _, v := range receipts {
+		resReceipts = append(resReceipts, &pb.Receipt{
+			Name:             v.Name,
+			NameEdited:       v.NameEdited,
+			PurchasePrice:    v.PurchasePrice,
+			PurchaseQuantity: v.PurchaseQuantity,
+			Remark:           v.Remark,
+		})
+	}
 
-	return &pb.ReadReceiptResponse{
+	err = stream.SendAndClose(&pb.ReadReceiptResponse{
 		Success: true,
-		Receipt: nil,
-	}, nil
+		Receipt: resReceipts,
+	})
+	if err != nil {
+		log.Printf("Failed to SendAndClose: %v", err)
+		status.Error(codes.Internal, fmt.Sprintf("Failed to SendAndClose: %v", err))
+	}
+
+	return nil
 }

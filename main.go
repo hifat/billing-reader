@@ -62,7 +62,7 @@ func main() {
 		grpc.UnaryInterceptor(s.authInterceptor),
 	)
 
-	pb.RegisterBillingReaderServer(grpcSrv, s.BillingReaderServer)
+	pb.RegisterBillingReaderServer(grpcSrv, &server{})
 
 	log.Printf("listening on port :%s", port)
 	if err := grpcSrv.Serve(lis); err != nil {
