@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BillingReaderClient interface {
-	ReadReceipt(ctx context.Context, in *ReadReceiptRequest, opts ...grpc.CallOption) (*ReadReceiptResponse, error)
+	ReadReceipt(ctx context.Context, opts ...grpc.CallOption) (BillingReader_ReadReceiptClient, error)
 }
 
 type billingReaderClient struct {
@@ -33,20 +33,45 @@ func NewBillingReaderClient(cc grpc.ClientConnInterface) BillingReaderClient {
 	return &billingReaderClient{cc}
 }
 
-func (c *billingReaderClient) ReadReceipt(ctx context.Context, in *ReadReceiptRequest, opts ...grpc.CallOption) (*ReadReceiptResponse, error) {
-	out := new(ReadReceiptResponse)
-	err := c.cc.Invoke(ctx, "/billingReaderPb.BillingReader/ReadReceipt", in, out, opts...)
+func (c *billingReaderClient) ReadReceipt(ctx context.Context, opts ...grpc.CallOption) (BillingReader_ReadReceiptClient, error) {
+	stream, err := c.cc.NewStream(ctx, &BillingReader_ServiceDesc.Streams[0], "/billingReaderPb.BillingReader/ReadReceipt", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &billingReaderReadReceiptClient{stream}
+	return x, nil
+}
+
+type BillingReader_ReadReceiptClient interface {
+	Send(*ReadReceiptRequest) error
+	CloseAndRecv() (*ReadReceiptResponse, error)
+	grpc.ClientStream
+}
+
+type billingReaderReadReceiptClient struct {
+	grpc.ClientStream
+}
+
+func (x *billingReaderReadReceiptClient) Send(m *ReadReceiptRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *billingReaderReadReceiptClient) CloseAndRecv() (*ReadReceiptResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(ReadReceiptResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // BillingReaderServer is the server API for BillingReader service.
 // All implementations must embed UnimplementedBillingReaderServer
 // for forward compatibility
 type BillingReaderServer interface {
-	ReadReceipt(context.Context, *ReadReceiptRequest) (*ReadReceiptResponse, error)
+	ReadReceipt(BillingReader_ReadReceiptServer) error
 	mustEmbedUnimplementedBillingReaderServer()
 }
 
@@ -54,8 +79,8 @@ type BillingReaderServer interface {
 type UnimplementedBillingReaderServer struct {
 }
 
-func (UnimplementedBillingReaderServer) ReadReceipt(context.Context, *ReadReceiptRequest) (*ReadReceiptResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ReadReceipt not implemented")
+func (UnimplementedBillingReaderServer) ReadReceipt(BillingReader_ReadReceiptServer) error {
+	return status.Errorf(codes.Unimplemented, "method ReadReceipt not implemented")
 }
 func (UnimplementedBillingReaderServer) mustEmbedUnimplementedBillingReaderServer() {}
 
@@ -70,22 +95,30 @@ func RegisterBillingReaderServer(s grpc.ServiceRegistrar, srv BillingReaderServe
 	s.RegisterService(&BillingReader_ServiceDesc, srv)
 }
 
-func _BillingReader_ReadReceipt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReadReceiptRequest)
-	if err := dec(in); err != nil {
+func _BillingReader_ReadReceipt_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(BillingReaderServer).ReadReceipt(&billingReaderReadReceiptServer{stream})
+}
+
+type BillingReader_ReadReceiptServer interface {
+	SendAndClose(*ReadReceiptResponse) error
+	Recv() (*ReadReceiptRequest, error)
+	grpc.ServerStream
+}
+
+type billingReaderReadReceiptServer struct {
+	grpc.ServerStream
+}
+
+func (x *billingReaderReadReceiptServer) SendAndClose(m *ReadReceiptResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *billingReaderReadReceiptServer) Recv() (*ReadReceiptRequest, error) {
+	m := new(ReadReceiptRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(BillingReaderServer).ReadReceipt(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/billingReaderPb.BillingReader/ReadReceipt",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BillingReaderServer).ReadReceipt(ctx, req.(*ReadReceiptRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 // BillingReader_ServiceDesc is the grpc.ServiceDesc for BillingReader service.
@@ -94,12 +127,13 @@ func _BillingReader_ReadReceipt_Handler(srv interface{}, ctx context.Context, de
 var BillingReader_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "billingReaderPb.BillingReader",
 	HandlerType: (*BillingReaderServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "ReadReceipt",
-			Handler:    _BillingReader_ReadReceipt_Handler,
+			StreamName:    "ReadReceipt",
+			Handler:       _BillingReader_ReadReceipt_Handler,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "pb/billing_reader.proto",
 }

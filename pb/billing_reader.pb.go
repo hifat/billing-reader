@@ -23,7 +23,8 @@ const (
 
 type ReadReceiptRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ImageData     []byte                 `protobuf:"bytes,1,opt,name=image_data,json=imageData,proto3" json:"image_data,omitempty"`
+	FileName      string                 `protobuf:"bytes,1,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	Chunk         []byte                 `protobuf:"bytes,2,opt,name=chunk,proto3" json:"chunk,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -58,9 +59,16 @@ func (*ReadReceiptRequest) Descriptor() ([]byte, []int) {
 	return file_pb_billing_reader_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ReadReceiptRequest) GetImageData() []byte {
+func (x *ReadReceiptRequest) GetFileName() string {
 	if x != nil {
-		return x.ImageData
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *ReadReceiptRequest) GetChunk() []byte {
+	if x != nil {
+		return x.Chunk
 	}
 	return nil
 }
@@ -205,10 +213,10 @@ var File_pb_billing_reader_proto protoreflect.FileDescriptor
 
 const file_pb_billing_reader_proto_rawDesc = "" +
 	"\n" +
-	"\x17pb/billing_reader.proto\x12\x0fbillingReaderPb\"3\n" +
-	"\x12ReadReceiptRequest\x12\x1d\n" +
-	"\n" +
-	"image_data\x18\x01 \x01(\fR\timageData\"\xaa\x01\n" +
+	"\x17pb/billing_reader.proto\x12\x0fbillingReaderPb\"G\n" +
+	"\x12ReadReceiptRequest\x12\x1b\n" +
+	"\tfile_name\x18\x01 \x01(\tR\bfileName\x12\x14\n" +
+	"\x05chunk\x18\x02 \x01(\fR\x05chunk\"\xaa\x01\n" +
 	"\aReceipt\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
 	"\vname_edited\x18\x02 \x01(\tR\n" +
@@ -219,9 +227,9 @@ const file_pb_billing_reader_proto_rawDesc = "" +
 	"\x13ReadReceiptResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x122\n" +
-	"\areceipt\x18\x03 \x03(\v2\x18.billingReaderPb.ReceiptR\areceipt2i\n" +
-	"\rBillingReader\x12X\n" +
-	"\vReadReceipt\x12#.billingReaderPb.ReadReceiptRequest\x1a$.billingReaderPb.ReadReceiptResponseB$Z\"github.com/hifat/billing-reader/pbb\x06proto3"
+	"\areceipt\x18\x03 \x03(\v2\x18.billingReaderPb.ReceiptR\areceipt2k\n" +
+	"\rBillingReader\x12Z\n" +
+	"\vReadReceipt\x12#.billingReaderPb.ReadReceiptRequest\x1a$.billingReaderPb.ReadReceiptResponse(\x01B$Z\"github.com/hifat/billing-reader/pbb\x06proto3"
 
 var (
 	file_pb_billing_reader_proto_rawDescOnce sync.Once

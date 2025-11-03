@@ -5,7 +5,8 @@ package billingReaderPb;
 option go_package = "github.com/hifat/billing-reader/pb";
 
 message ReadReceiptRequest {
-    bytes image_data = 1;
+    string file_name = 1;
+    bytes chunk = 2;
 }
 
 message Receipt {
@@ -23,5 +24,5 @@ message ReadReceiptResponse {
 }
 
 service BillingReader {
-    rpc ReadReceipt(ReadReceiptRequest) returns (ReadReceiptResponse);
+    rpc ReadReceipt(stream ReadReceiptRequest) returns (ReadReceiptResponse);
 }
