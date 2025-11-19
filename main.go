@@ -33,20 +33,6 @@ func init() {
 	}
 }
 
-func validateEnv() {
-	keys := map[string]string{
-		"PORT":           os.Getenv("PORT"),
-		"API_KEY":        os.Getenv("API_KEY"),
-		"GEMINI_API_KEY": os.Getenv("GEMINI_API_KEY"),
-	}
-
-	for k, v := range keys {
-		if v == "" {
-			log.Fatalf("%s is required", k)
-		}
-	}
-}
-
 func main() {
 	s := &server{
 		apiKey: os.Getenv("API_KEY"),
