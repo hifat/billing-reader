@@ -29,7 +29,7 @@ type Point struct {
 
 func init() {
 	if err := godotenv.Load("./env/.env"); err != nil {
-		log.Fatal(err)
+		log.Println("Running without .env file (using system environment variables)")
 	}
 }
 

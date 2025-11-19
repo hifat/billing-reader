@@ -108,5 +108,7 @@ func (s *server) ReadReceipt(stream pb.BillingReader_ReadReceiptServer) error {
 		status.Error(codes.Internal, fmt.Sprintf("Failed to SendAndClose: %v", err))
 	}
 
+	// TODO: Remove file when used
+
 	return nil
 }
